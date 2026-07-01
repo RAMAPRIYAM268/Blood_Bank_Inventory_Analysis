@@ -3,59 +3,164 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 
+# ---------------------------------------------------------
+# Page Configuration
+# ---------------------------------------------------------
 
 st.set_page_config(
-    page_title="Blood Bank Inventory Analytics Dashboard",
+    page_title="Blood Bank Inventory Analytics",
     page_icon="🩸",
     layout="wide"
 )
 
-def load_css():
-    with open("Dashboard/style.css") as f:
-        st.markdown(
-            f"<style>{f.read()}</style>",
-            unsafe_allow_html=True
-        )
+# ---------------------------------------------------------
+# Professional Theme
+# ---------------------------------------------------------
 
-load_css()
+st.markdown("""
+<style>
 
+/* Background */
+.stApp{
+    background-color:#F8FAFC;
+}
 
-st.title("🩸 Blood Bank Inventory Analytics")
+/* KPI Cards */
+[data-testid="metric-container"]{
+    background:white;
+    border-left:6px solid #B91C1C;
+    border-radius:12px;
+    padding:18px;
+    box-shadow:0px 2px 10px rgba(0,0,0,0.08);
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"]{
+    background:#FFFFFF;
+}
+
+/* Tables */
+thead tr th{
+    background:#B91C1C !important;
+    color:white !important;
+}
+
+h1,h2,h3{
+    color:#7F1D1D;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------------------------------------
+# Dashboard Title
+# ---------------------------------------------------------
+
+st.title("🩸 Blood Bank Inventory Analytics Dashboard")
 
 st.caption(
-    f"Hospital Inventory Monitoring & Decision Support Dashboard | Last Updated: {datetime.now().strftime('%d %b %Y')}"
+    f"Hospital Inventory Monitoring & Decision Support Dashboard | Last Updated : {datetime.now().strftime('%d %b %Y')}"
 )
 
 st.markdown("---")
 
+# ---------------------------------------------------------
+# Load Dataset
+# ---------------------------------------------------------
+
 @st.cache_data
 def load_data():
+
     df = pd.read_csv(
         r"C:\Users\Ramapriya Murugesan\Desktop\Blood_Bank_Inventory_Analytics\Dataset\Blood_Bank_Inventory_Feature_Engineered.csv"
     )
+
     return df
 
 df = load_data()
 
-#Sidebar Filters
-st.sidebar.header("🔍 Filters")
+# ---------------------------------------------------------
+# Common Plot Style
+# ---------------------------------------------------------
+
+def style_chart(fig):
+
+    fig.update_layout(
+
+        template="plotly_white",
+
+        paper_bgcolor="white",
+
+        plot_bgcolor="white",
+
+        height=450,
+
+        font=dict(
+            family="Segoe UI",
+            size=13,
+            color="#1F2937"
+        ),
+
+        title=dict(
+            font=dict(
+                size=20,
+                color="#7F1D1D"
+            ),
+            x=0.02
+        ),
+
+        legend=dict(
+            orientation="h",
+            y=1.05,
+            x=0
+        ),
+
+        margin=dict(
+            l=20,
+            r=20,
+            t=60,
+            b=20
+        ),
+
+        xaxis=dict(
+            showgrid=False,
+            linecolor="#E5E7EB"
+        ),
+
+        yaxis=dict(
+            gridcolor="#E5E7EB",
+            zeroline=False
+        )
+
+    )
+
+    return fig
+
+# ---------------------------------------------------------
+# Sidebar Filters
+# ---------------------------------------------------------
+
+st.sidebar.title("🔍 Dashboard Filters")
 
 hospital = st.sidebar.selectbox(
-    "Select Hospital",
+    "Hospital",
     ["All"] + sorted(df["Hospital"].dropna().unique())
 )
 
 blood_group = st.sidebar.selectbox(
-    "Select Blood Group",
+    "Blood Group",
     ["All"] + sorted(df["Blood_Group"].dropna().unique())
 )
 
 city = st.sidebar.selectbox(
-    "Select City",
+    "City",
     ["All"] + sorted(df["City"].dropna().unique())
 )
 
-#Apply Filters
+# ---------------------------------------------------------
+# Apply Filters
+# ---------------------------------------------------------
+
 filtered_df = df.copy()
 
 if hospital != "All":
@@ -72,78 +177,73 @@ if city != "All":
     filtered_df = filtered_df[
         filtered_df["City"] == city
     ]
-#KPI Section
-st.subheader("📊 Key Performance Indicators")
 
-total_inventory = filtered_df["Inventory_Units"].sum()
+# ---------------------------------------------------------
+# KPI Section
+# ---------------------------------------------------------
+inventory=filtered_df["Inventory_Units"].sum()
 
-total_demand = filtered_df["Demand_Units"].sum()
+demand=filtered_df["Demand_Units"].sum()
 
-total_used = filtered_df["Units_Used"].sum()
+used=filtered_df["Units_Used"].sum()
 
-low_stock = filtered_df[
-    filtered_df["Inventory_Status"]=="Low Stock"
+near_expiry=filtered_df[
+filtered_df["Days_To_Expiry"]<=7
 ].shape[0]
 
-near_expiry = filtered_df[
-    filtered_df["Days_To_Expiry"]<=7
-].shape[0]
+shortage=filtered_df["Stock_Shortage"].sum()
+
+fulfillment=(used/demand)*100
+
+health=(inventory/(inventory+shortage))*100
 
 
-col1, col2, col3, col4, col5 = st.columns(5)
+st.subheader("Executive KPIs")
 
-with col1:
-    st.markdown(f"""
-    <div class="kpi-card inventory">
-        <div class="kpi-title">🩸 Total Inventory</div>
-        <div class="kpi-value">{total_inventory:,}</div>
-    </div>
-    """, unsafe_allow_html=True)
+c1,c2,c3,c4,c5=st.columns(5)
 
-with col2:
-    st.markdown(f"""
-    <div class="kpi-card demand">
-        <div class="kpi-title">📈 Total Demand</div>
-        <div class="kpi-value">{total_demand:,}</div>
-    </div>
-    """, unsafe_allow_html=True)
+c1.metric(
+"🩸 Inventory",
+f"{inventory:,}"
+)
 
-with col3:
-    st.markdown(f"""
-    <div class="kpi-card used">
-        <div class="kpi-title">💉 Units Used</div>
-        <div class="kpi-value">{total_used:,}</div>
-    </div>
-    """, unsafe_allow_html=True)
+c2.metric(
+"📈 Fulfillment",
+f"{fulfillment:.1f}%"
+)
 
-with col4:
-    st.markdown(f"""
-    <div class="kpi-card low">
-        <div class="kpi-title">⚠️ Low Stock</div>
-        <div class="kpi-value">{low_stock}</div>
-    </div>
-    """, unsafe_allow_html=True)
+c3.metric(
+"⚠ Near Expiry",
+near_expiry
+)
 
-with col5:
-    st.markdown(f"""
-    <div class="kpi-card expiry">
-        <div class="kpi-title">⏳ Near Expiry</div>
-        <div class="kpi-value">{near_expiry}</div>
-    </div>
-    """, unsafe_allow_html=True)
+c4.metric(
+"🚑 Shortage",
+f"{shortage:,}"
+)
+
+c5.metric(
+"❤ Inventory Health",
+f"{health:.1f}%"
+)
+
 
 st.markdown("---")
 
-#Interactive Charts
+# ---------------------------------------------------------
+# Interactive Charts
+# ---------------------------------------------------------
 
-st.subheader("📈 Inventory Performance")
+st.subheader("📈 Blood Inventory Performance")
 
-col1,col2 = st.columns(2)
+# =========================================================
+# CHART 1 : Demand vs Inventory by Blood Group
+# =========================================================
 
-#Blood Group vs Demand
+st.subheader("📊 Blood Inventory Analysis")
 
 comparison = (
-    filtered_df.groupby("Blood_Group")[["Demand_Units", "Inventory_Units"]]
+    filtered_df.groupby("Blood_Group")[["Inventory_Units", "Demand_Units"]]
     .sum()
     .reset_index()
 )
@@ -151,65 +251,24 @@ comparison = (
 fig1 = px.bar(
     comparison,
     x="Blood_Group",
-    y=["Demand_Units", "Inventory_Units"],
+    y=["Inventory_Units", "Demand_Units"],
     barmode="group",
-    color_discrete_sequence=["#F59E0B", "#2563EB"],
-    template="plotly_white",
-    text_auto=True,
-    title="Demand vs Inventory by Blood Group"
+    color_discrete_sequence=["#B91C1C", "#F59E0B"],
+    title="Inventory vs Demand by Blood Group"
 )
 
 fig1.update_layout(
-    title_x=0.5,
-    title_font=dict(size=20, color="#1E3A8A"),
-    font=dict(size=13),
-    xaxis_title="Blood Group",
-    yaxis_title="Blood Units",
-    legend_title="Metrics",
     plot_bgcolor="white",
     paper_bgcolor="white",
-    bargap=0.25
+    title_x=0.25,
+    font=dict(size=13)
 )
 
-fig1.update_traces(textposition="outside")
 
+# =========================================================
+# CHART 2: Hospital Stock Shortage
+# =========================================================
 
-
-
-#Blood Group vs Inventory
-blood_inventory = (
-    filtered_df.groupby("Blood_Group")["Inventory_Units"]
-    .sum()
-    .sort_values(ascending=False)
-    .reset_index()
-)
-
-fig2 = px.bar(
-    blood_inventory,
-    x="Blood_Group",
-    y="Inventory_Units",
-    color="Inventory_Units",
-    color_continuous_scale="Tealgrn",
-    template="plotly_white",
-    text="Inventory_Units",
-    title="Inventory by Blood Group"
-)
-
-fig2.update_layout(
-    title_x=0.5,
-    title_font=dict(size=20,color="#1E3A8A"),
-    font=dict(size=13),
-    xaxis_title="Blood Group",
-    yaxis_title="Inventory Units",
-    coloraxis_showscale=False,
-    plot_bgcolor="white",
-    paper_bgcolor="white"
-)
-
-fig2.update_traces(textposition="outside")
-
-
-#Hospital Shortage
 
 hospital_shortage = (
     filtered_df.groupby("Hospital")["Stock_Shortage"]
@@ -218,222 +277,160 @@ hospital_shortage = (
     .reset_index()
 )
 
-fig3 = px.bar(
+fig2 = px.bar(
     hospital_shortage,
     x="Stock_Shortage",
     y="Hospital",
     orientation="h",
+    text="Stock_Shortage",
     color="Stock_Shortage",
     color_continuous_scale="Reds",
-    template="plotly_white",
-    text="Stock_Shortage",
-    title="Hospital Inventory Shortages"
+    title="Hospital-wise Stock Shortage"
 )
 
-fig3.update_layout(
-    title_x=0.5,
-    title_font=dict(size=20,color="#1E3A8A"),
-    font=dict(size=13),
-    xaxis_title="Shortage Units",
-    yaxis_title="Hospital",
-    coloraxis_showscale=False,
+fig2.update_traces(textposition="outside")
+
+fig2.update_layout(
     plot_bgcolor="white",
     paper_bgcolor="white"
+)
+
+# =========================================================
+# CHART 3: Near Expiry Blood Units
+# =========================================================
+
+
+expiry = (
+    filtered_df[filtered_df["Days_To_Expiry"] <= 7]
+    .groupby("Blood_Group")
+    .size()
+    .reset_index(name="Near_Expiry_Units")
+)
+
+fig3 = px.bar(
+    expiry,
+    x="Blood_Group",
+    y="Near_Expiry_Units",
+    text="Near_Expiry_Units",
+    color="Near_Expiry_Units",
+    color_continuous_scale="Oranges",
+    title="Near Expiry Blood Units"
 )
 
 fig3.update_traces(textposition="outside")
 
+fig3.update_layout(
+    plot_bgcolor="white",
+    paper_bgcolor="white"
+)
 
+# =========================================================
+# CHART 4: Inventory Health by Hospital
+# =========================================================
 
-#City Usage
-city_usage = (
-    filtered_df.groupby("City")["Units_Used"]
-    .sum()
-    .sort_values(ascending=False)
+health_df = (
+    filtered_df.groupby("Hospital")
+    .agg({
+        "Inventory_Units":"sum",
+        "Stock_Shortage":"sum"
+    })
     .reset_index()
+)
+
+health_df["Inventory_Health"] = (
+    health_df["Inventory_Units"] /
+    (
+        health_df["Inventory_Units"] +
+        health_df["Stock_Shortage"]
+    ) * 100
 )
 
 fig4 = px.bar(
-    city_usage,
-    x="City",
-    y="Units_Used",
-    color="Units_Used",
-    color_continuous_scale="Blues",
-    template="plotly_white",
-    text="Units_Used",
-    title="City-wise Blood Usage"
-)
-
-fig4.update_layout(
-    title_x=0.5,
-    title_font=dict(size=20,color="#1E3A8A"),
-    font=dict(size=13),
-    xaxis_title="City",
-    yaxis_title="Blood Units Used",
-    coloraxis_showscale=False,
-    plot_bgcolor="white",
-    paper_bgcolor="white"
-)
-
-fig4.update_traces(textposition="outside")
-
-
-
-#Average Usage Rate by Hospital
-
-usage = (
-    filtered_df.groupby("Hospital")["Usage_Rate"]
-    .mean()
-    .sort_values(ascending=True)
-    .reset_index()
-)
-
-fig6 = px.bar(
-    usage,
-    x="Usage_Rate",
-    y="Hospital",
-    orientation="h",
-    color="Usage_Rate",
+    health_df,
+    x="Hospital",
+    y="Inventory_Health",
+    text="Inventory_Health",
+    color="Inventory_Health",
     color_continuous_scale="Greens",
-    template="plotly_white",
-    text="Usage_Rate",
-    title="Average Blood Usage Rate by Hospital"
+    title="Inventory Health by Hospital"
 )
 
-fig6.update_layout(
-    title_x=0.5,
-    title_font=dict(size=20,color="#1E3A8A"),
-    font=dict(size=13),
-    xaxis_title="Usage Rate (%)",
-    yaxis_title="Hospital",
-    coloraxis_showscale=False,
-    plot_bgcolor="white",
-    paper_bgcolor="white"
-)
-
-fig6.update_traces(
+fig4.update_traces(
     texttemplate="%{text:.1f}%",
     textposition="outside"
 )
 
+fig4.update_layout(
+    plot_bgcolor="white",
+    paper_bgcolor="white"
+)
 
-#Inventory Redistribution
-redistribution = (
-    filtered_df.groupby("Hospital")[["Stock_Excess", "Stock_Shortage"]]
-    .sum()
+# =========================================================
+# CHART 5 : Demand Fulfillment by Blood Group
+# =========================================================
+fulfillment_df = (
+    filtered_df.groupby("Blood_Group")
+    .agg({
+        "Demand_Units":"sum",
+        "Units_Used":"sum"
+    })
     .reset_index()
 )
 
-fig7 = px.bar(
-    redistribution,
-    x="Hospital",
-    y=["Stock_Excess", "Stock_Shortage"],
-    barmode="group",
-    color_discrete_sequence=["#22C55E", "#DC2626"],
-    template="plotly_white",
-    text_auto=True,
-    title="Inventory Redistribution Analysis"
+fulfillment_df["Demand_Fulfillment"] = (
+    fulfillment_df["Units_Used"] /
+    fulfillment_df["Demand_Units"]
+) * 100
+
+fig5 = px.bar(
+    fulfillment_df,
+    x="Blood_Group",
+    y="Demand_Fulfillment",
+    text="Demand_Fulfillment",
+    color="Demand_Fulfillment",
+    color_continuous_scale="Blues",
+    title="Demand Fulfillment by Blood Group"
 )
 
-fig7.update_layout(
-    title_x=0.5,
-    title_font=dict(size=20,color="#1E3A8A"),
-    font=dict(size=13),
-    xaxis_title="Hospital",
-    yaxis_title="Blood Units",
-    legend_title="Inventory Status",
+fig5.update_traces(
+    texttemplate="%{text:.1f}%",
+    textposition="outside"
+)
+
+fig5.update_layout(
     plot_bgcolor="white",
-    paper_bgcolor="white",
-    bargap=0.25
+    paper_bgcolor="white"
 )
 
-fig7.update_traces(textposition="outside")
+# =========================================================
+# DASHBOARD LAYOUT
+# =========================================================
 
 
+row1_col1, row1_col2 = st.columns(2)
 
-#Layout
-
-st.subheader("📊 Blood Inventory Analytics")
-
-# Row 1
-col1, col2 = st.columns(2)
-
-with col1:
+with row1_col1:
     st.plotly_chart(fig1, use_container_width=True)
 
-with col2:
+with row1_col2:
     st.plotly_chart(fig2, use_container_width=True)
 
-# Row 2
-col3, col4 = st.columns(2)
+row2_col1, row2_col2 = st.columns(2)
 
-with col3:
+with row2_col1:
     st.plotly_chart(fig3, use_container_width=True)
 
-with col4:
+with row2_col2:
     st.plotly_chart(fig4, use_container_width=True)
 
-# Row 3
-col5, col6 = st.columns(2)
-
-with col5:
-    st.plotly_chart(fig6, use_container_width=True)
-
-with col6:
-    st.plotly_chart(fig7, use_container_width=True)
-    
-st.markdown("---")
-
-#Hospital Performance Summary
+st.plotly_chart(fig5, use_container_width=True)
 
 st.markdown("---")
 
-st.subheader("🏥 Hospital Performance Summary")
-
-summary = (
-    filtered_df.groupby("Hospital")
-    .agg(
-        Inventory=("Inventory_Units","sum"),
-        Demand=("Demand_Units","sum"),
-        Used=("Units_Used","sum"),
-        Shortage=("Stock_Shortage","sum"),
-        Excess=("Stock_Excess","sum")
-    )
-    .reset_index()
-)
-
-st.dataframe(summary, use_container_width=True)
-
-#Operational Recommendations
-
-st.markdown("---")
-
-st.subheader("💡 Operational Recommendations")
-
-recommendations = pd.DataFrame({
-    "Priority": [
-        "High",
-        "High",
-        "Medium",
-        "High",
-        "Medium"
-    ],
-    "Recommendation": [
-        "Increase A+ blood donation campaigns",
-        "Replenish inventory at MGM Hospital",
-        "Monitor blood units nearing expiry",
-        "Redistribute excess stock between hospitals",
-        "Review inventory weekly to reduce shortages"
-    ]
-})
-
-st.dataframe(recommendations, use_container_width=True)
-
-#Key Business Insights
-
-st.markdown("---")
-
-st.subheader("📌 Key Business Insights")
+# ==========================================================
+# BUSINESS INSIGHTS
+# ==========================================================
+st.subheader("📌 Business Insights")
 
 highest_demand = (
     filtered_df.groupby("Blood_Group")["Demand_Units"]
@@ -447,11 +444,6 @@ highest_inventory = (
     .idxmax()
 )
 
-highest_usage_city = (
-    filtered_df.groupby("City")["Units_Used"]
-    .sum()
-    .idxmax()
-)
 
 highest_shortage = (
     filtered_df.groupby("Hospital")["Stock_Shortage"]
@@ -459,55 +451,162 @@ highest_shortage = (
     .idxmax()
 )
 
+highest_usage_city = (
+    filtered_df.groupby("City")["Units_Used"]
+    .sum()
+    .idxmax()
+)
+
+expiry_group = (
+    filtered_df[filtered_df["Days_To_Expiry"] <= 7]
+    .groupby("Blood_Group")
+    .size()
+    .idxmax()
+)
+
 st.info(f"""
-• **Highest Demand Blood Group:** {highest_demand}
 
-• **Highest Available Inventory:** {highest_inventory}
+### 📊 Executive Insights
 
-• **Highest Blood Usage City:** {highest_usage_city}
+🩸 **Highest Demand Blood Group:** **{highest_demand}**
 
-• **Hospital with Highest Shortage:** {highest_shortage}
+🏥 **Highest Available Inventory:** **{highest_inventory}**
 
-• Inventory monitoring helps reduce shortages and optimize blood availability.
+🚑 **Hospital with Highest Shortage:** **{highest_shortage}**
+
+🌍 **Highest Blood Utilization City:** **{highest_usage_city}**
+
+⚠️ **Highest Expiry Risk Blood Group:** **{expiry_group}**
+
+📈 **Demand Fulfillment Rate:** **{fulfillment:.1f}%**
+
+❤️ **Inventory Health Score:** **{health:.1f}%**
+
 """)
+
+
+
+# ==========================================================
+# Operational Recommendations
+# ==========================================================
+
+
+st.subheader("💡 Operational Recommendations")
+
+st.success(
+    f"Increase donation campaigns for **{highest_demand}** blood group to meet rising demand."
+)
+
+st.warning(
+    f"Prioritize replenishment for **{highest_shortage}** hospital to reduce stock shortages."
+)
+
+st.info(
+    f"Utilize or redistribute **{expiry_group}** blood units before expiry to minimize wastage."
+)
+
+st.success(
+    "Review inventory levels weekly and redistribute excess stock between hospitals."
+)
+
+st.success(
+    "Monitor demand fulfillment regularly to improve emergency blood availability."
+)
+
+
+# ==========================================================
+# Hospital Performance Summary
+# ==========================================================
 
 st.markdown("---")
 
+st.subheader("🏥 Hospital Performance Summary")
+
+summary = (
+    filtered_df.groupby("Hospital")
+    .agg(
+        Total_Inventory=("Inventory_Units","sum"),
+        Total_Demand=("Demand_Units","sum"),
+        Units_Used=("Units_Used","sum"),
+        Stock_Shortage=("Stock_Shortage","sum"),
+        Stock_Excess=("Stock_Excess","sum"),
+        Avg_Usage_Rate=("Usage_Rate","mean")
+    )
+    .reset_index()
+)
+
+summary["Avg_Usage_Rate"] = summary["Avg_Usage_Rate"].round(1)
+st.dataframe(
+    summary,
+    use_container_width=True,
+    hide_index=True
+)
 
 
-#Executive Summary
+# ==========================================================
+# EXECUTIVE SUMMARY
+# ==========================================================
+
 
 st.markdown("---")
 
 st.subheader("📄 Executive Summary")
+inventory_status = "Healthy" if health >= 85 else "Needs Improvement"
 
-st.success("""
-This dashboard provides a centralized view of blood inventory across hospitals.
+demand_status = "Good" if fulfillment >= 90 else "Needs Attention"
 
-The analysis helps healthcare administrators:
+expiry_status = "Low" if near_expiry < 20 else "High"
 
-• Monitor blood demand and inventory.
+st.success(f"""
+### Overall Inventory Status
 
-• Identify hospitals with inventory shortages.
+• **Inventory Health:** {health:.1f}% ({inventory_status})
 
-• Optimize blood redistribution.
+• **Demand Fulfillment:** {fulfillment:.1f}% ({demand_status})
 
-• Improve emergency blood availability.
+• **Near Expiry Blood Units:** {near_expiry} ({expiry_status} Risk)
 
-• Support informed operational decisions using data.
+### Key Findings
+
+✔ Blood demand is highest for **{highest_demand}**.
+
+✔ **{highest_shortage}** requires immediate inventory replenishment.
+
+✔ **{expiry_group}** blood units should be utilized or redistributed before expiry.
+
+✔ **{highest_usage_city}** has the highest blood utilization.
+
+### Recommended Actions
+
+• Increase donation campaigns for high-demand blood groups.
+
+• Redistribute excess blood inventory between hospitals.
+
+• Prioritize usage of near-expiry blood units.
+
+• Review inventory levels weekly.
+
+• Monitor demand fulfillment to improve emergency preparedness.
+
 """)
 
-#Footer
 
 
 st.markdown("---")
 
-st.markdown("""
-<div style="text-align:center;color:gray">
+# ==========================================================
+# FOOTER
+# ==========================================================
 
-Blood Bank Inventory Analytics Dashboard
+st.markdown("""
+<div style='text-align:center;
+padding:15px;
+font-size:15px;
+color:gray;'>
+
+🩸 <b>Blood Bank Inventory Analytics Dashboard</b><br>
 
 Developed using Python • Pandas • Plotly • Streamlit
 
 </div>
-""", unsafe_allow_html=True)
+""",unsafe_allow_html=True)
