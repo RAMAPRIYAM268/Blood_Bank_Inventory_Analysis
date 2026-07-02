@@ -166,7 +166,14 @@ fig1 = px.bar(
     color_discrete_sequence=["#B91C1C", "#F59E0B"],
     title="Inventory vs Demand by Blood Group"
 )
-
+fig1.update_traces(
+    textposition="outside",
+    textfont=dict(
+        size=14,
+        color="black"
+    ),
+    cliponaxis=False  
+)
 fig1.update_layout(
     template="plotly_white",
     paper_bgcolor="white",
@@ -197,7 +204,14 @@ fig2 = px.bar(
     title="Hospital-wise Stock Shortage"
 )
 
-fig2.update_traces(textposition="outside")
+fig2.update_traces(
+    textposition="outside",
+    textfont=dict(
+        size=14,
+        color="black"
+    ),
+    cliponaxis=False  
+)
 
 fig2.update_layout(
     template="plotly_white",
@@ -230,8 +244,14 @@ fig3 = px.bar(
     title="Near Expiry Blood Units"
 )
 
-fig3.update_traces(textposition="outside")
-
+fig3.update_traces(
+    textposition="outside",
+    textfont=dict(
+        size=14,
+        color="black"
+    ),
+    cliponaxis=False  
+)
 fig3.update_layout(
     template="plotly_white",
     paper_bgcolor="white",
@@ -273,7 +293,12 @@ fig4 = px.bar(
 
 fig4.update_traces(
     texttemplate="%{text:.1f}%",
-    textposition="outside"
+    textposition="outside",
+    textfont=dict(
+        size=14,
+        color="black"
+    ),
+    cliponaxis=False  
 )
 
 fig4.update_layout(
@@ -314,8 +339,14 @@ fig5 = px.bar(
 
 fig5.update_traces(
     texttemplate="%{text:.1f}%",
-    textposition="outside"
+    textposition="outside",
+    textfont=dict(
+        size=14,
+        color="black"
+    ),
+    cliponaxis=False  
 )
+
 
 fig5.update_layout(
     template="plotly_white",
