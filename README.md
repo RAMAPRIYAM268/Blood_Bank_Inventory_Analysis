@@ -113,25 +113,24 @@ The dashboard monitors the following business metrics:
 
 ### Executive Dashboard
 
-![Executive Dashboard](Images/Executive Dashboard.png)
+![Executive Dashboard](Images/executive_dashboard.png)
 
 ---
 
 ### Inventory Analytics
 
-![Inventory Analytics](Images/Executive Insights Dashboard.png)
-
+![Inventory Analytics](Images/inventory_dashboard.png)
 ---
 
 ### Hospital Performance
 
-![Hospital Performance](Images/Hospital Performance Dashboard.png)
+![Hospital Performance](Images/hospital_performance_dashboard.png)
 
 ---
 
 ### Executive Insights
 
-![Executive Insights](Images/Inventory Dashboard.png)
+![Executive Insights](Images/executive_insights_dashboard.png)
 
 ---
 
